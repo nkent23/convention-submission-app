@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+/* English Honor Societies brand palette (englishhonorsocieties.org) */
+@theme {
+  --color-ehs-50: #eef5f2;
+  --color-ehs-100: #dcebe6;
+  --color-ehs-200: #b5d3ca;
+  --color-ehs-300: #8ab7aa;
+  --color-ehs-600: #1d6a5c;
+  --color-ehs-700: #18554b;
+  --color-ehs-800: #123f38;
+  --color-crimson-700: #a00133;
+  --color-crimson-800: #8a012c;
+}
+
+body {
+  @apply bg-slate-50 text-slate-900 antialiased;
+}
+
+h1,
+h2 {
+  font-family: Georgia, "Times New Roman", serif;
+}
