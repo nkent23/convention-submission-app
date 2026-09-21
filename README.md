@@ -29,15 +29,19 @@ npm run dev
 
 ## CSV import format
 
-Same as the old app, so existing files keep working:
+Required columns: `organization`, `school`, and either `member_name` or
+`first_name` + `last_name`:
 
 ```csv
-organization,school,member_name,submission_url
-Sigma Tau Delta,University of Georgia,Jane Smith,https://example.com/submit/jane-smith
+organization,school,first_name,last_name
+Sigma Tau Delta,University of Georgia,Jane,Smith
 ```
 
-Import is two-step (preview, then commit). Optional "new cycle" mode archives
-active members not present in the file instead of deleting them.
+The submission URL is entered once on the import page and applied to every
+member; an optional `submission_url` column overrides it per row (the old
+app's four-column format still works). Import is two-step (preview, then
+commit). Optional "new cycle" mode archives active members not present in
+the file instead of deleting them.
 
 ## Deploy
 

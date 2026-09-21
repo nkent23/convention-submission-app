@@ -25,6 +25,7 @@ type Preview = {
 export default function ImportPage() {
   const [csv, setCsv] = useState("");
   const [fileName, setFileName] = useState("");
+  const [defaultSubmissionUrl, setDefaultSubmissionUrl] = useState("");
   const [duplicateHandling, setDuplicateHandling] = useState<"skip" | "update">("skip");
   const [archiveMissing, setArchiveMissing] = useState(false);
   const [preview, setPreview] = useState<Preview | null>(null);
@@ -49,7 +50,13 @@ export default function ImportPage() {
       const res = await fetch("/api/admin/import", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ csv, mode, duplicateHandling, archiveMissing }),
+        body: JSON.stringify({
+          csv,
+          mode,
+          duplicateHandling,
+          archiveMissing,
+          defaultSubmissionUrl: defaultSubmissionUrl.trim(),
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -82,10 +89,14 @@ export default function ImportPage() {
       <h1 className="mb-2 text-3xl font-bold text-gray-900">Bulk Import</h1>
       <p className="mb-6 text-gray-600">
         Upload a CSV with columns <code className="rounded bg-gray-100 px-1">organization</code>,{" "}
-        <code className="rounded bg-gray-100 px-1">school</code>,{" "}
-        <code className="rounded bg-gray-100 px-1">member_name</code>,{" "}
-        <code className="rounded bg-gray-100 px-1">submission_url</code>. Missing organizations
-        and schools are created automatically. Nothing is written until you commit.
+        <code className="rounded bg-gray-100 px-1">school</code>, and either{" "}
+        <code className="rounded bg-gray-100 px-1">member_name</code> or{" "}
+        <code className="rounded bg-gray-100 px-1">first_name</code> +{" "}
+        <code className="rounded bg-gray-100 px-1">last_name</code>. The Submission URL below is
+        applied to every member (an optional{" "}
+        <code className="rounded bg-gray-100 px-1">submission_url</code> column overrides it
+        per row). Missing organizations and schools are created automatically. Nothing is
+        written until you commit.
       </p>
 
       <div className="mb-4 rounded-lg border border-gray-200 bg-white p-6">
@@ -100,6 +111,19 @@ export default function ImportPage() {
             Loaded <span className="font-medium">{fileName}</span> ({(csv.length / 1024).toFixed(0)} KB)
           </p>
         )}
+
+        <div className="mb-4">
+          <label className="mb-1 block text-sm font-medium text-gray-700">
+            Submission URL (applied to every member)
+          </label>
+          <input
+            type="url"
+            placeholder="https://..."
+            value={defaultSubmissionUrl}
+            onChange={(e) => setDefaultSubmissionUrl(e.target.value)}
+            className="w-full rounded-lg border border-gray-300 p-2 text-sm"
+          />
+        </div>
 
         <div className="mb-4 space-y-2 text-sm">
           <label className="flex items-center gap-2">

@@ -17,6 +17,9 @@ const bodySchema = z.object({
   // Archive active members of the CSV's organizations that are absent from
   // the file — the "replace roster for a new cycle" switch.
   archiveMissing: z.boolean().default(false),
+  // Applied to rows without a submission_url; required when the CSV has no
+  // submission_url column (everyone shares the convention portal URL).
+  defaultSubmissionUrl: z.string().trim().url().max(2000).or(z.literal("")).default(""),
 });
 
 type Plan = {
@@ -133,12 +136,12 @@ export async function POST(request: NextRequest) {
   const parsed = bodySchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Invalid request" }, { status: 400 });
 
-  const { csv, mode, duplicateHandling, archiveMissing } = parsed.data;
+  const { csv, mode, duplicateHandling, archiveMissing, defaultSubmissionUrl } = parsed.data;
   if (csv.length > MAX_CSV_BYTES) {
     return NextResponse.json({ error: "CSV is larger than 10MB" }, { status: 413 });
   }
 
-  const parsedCsv = parseRosterCsv(csv);
+  const parsedCsv = parseRosterCsv(csv, defaultSubmissionUrl);
   if ("headerError" in parsedCsv) {
     return NextResponse.json({ error: parsedCsv.headerError }, { status: 400 });
   }

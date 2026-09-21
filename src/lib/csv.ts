@@ -41,36 +41,59 @@ export type ParsedRoster = {
   errors: { line: number; message: string }[];
 };
 
-const REQUIRED = ["organization", "school", "member_name", "submission_url"] as const;
-
-export function parseRosterCsv(csv: string): ParsedRoster | { headerError: string } {
+export function parseRosterCsv(
+  csv: string,
+  defaultSubmissionUrl = "",
+): ParsedRoster | { headerError: string } {
   const lines = csv.split(/\r?\n/).filter((l) => l.trim() !== "");
   if (lines.length < 2) {
     return { headerError: "CSV must have a header row and at least one data row" };
   }
 
   const headers = parseCsvLine(lines[0]).map((h) => h.toLowerCase().replace(/\s+/g, "_"));
-  const missing = REQUIRED.filter((c) => !headers.includes(c));
+  const missing = ["organization", "school"].filter((c) => !headers.includes(c));
   if (missing.length > 0) {
     return { headerError: `Missing required columns: ${missing.join(", ")}` };
   }
 
-  const idx = Object.fromEntries(REQUIRED.map((c) => [c, headers.indexOf(c)]));
+  // Names come as one member_name column, or first_name + last_name.
+  const hasFullName = headers.includes("member_name");
+  const hasSplitName = headers.includes("first_name") && headers.includes("last_name");
+  if (!hasFullName && !hasSplitName) {
+    return {
+      headerError:
+        "CSV needs a member_name column, or first_name and last_name columns",
+    };
+  }
+
+  const hasUrlColumn = headers.includes("submission_url");
+  if (!hasUrlColumn && !defaultSubmissionUrl) {
+    return {
+      headerError:
+        "CSV has no submission_url column — enter a Submission URL to apply to every member",
+    };
+  }
+
+  const col = (name: string) => headers.indexOf(name);
   const rows: RosterRow[] = [];
   const errors: { line: number; message: string }[] = [];
 
   lines.slice(1).forEach((raw, i) => {
     const line = i + 2; // 1-based, after header
     const values = parseCsvLine(raw);
+    const memberName = hasFullName
+      ? (values[col("member_name")] ?? "")
+      : `${values[col("first_name")] ?? ""} ${values[col("last_name")] ?? ""}`.trim();
     const row: RosterRow = {
       line,
-      organization: values[idx.organization] ?? "",
-      school: values[idx.school] ?? "",
-      memberName: values[idx.member_name] ?? "",
-      submissionUrl: values[idx.submission_url] ?? "",
+      organization: values[col("organization")] ?? "",
+      school: values[col("school")] ?? "",
+      memberName,
+      submissionUrl:
+        (hasUrlColumn ? values[col("submission_url")] : "") || defaultSubmissionUrl,
     };
     if (!row.organization || !row.school || !row.memberName || !row.submissionUrl) {
-      errors.push({ line, message: "Missing organization, school, member_name, or submission_url" });
+      errors.push({ line, message: "Missing organization, school, member name, or submission URL" });
       return;
     }
     try {
