@@ -41,17 +41,37 @@ export type ParsedRoster = {
   errors: { line: number; message: string }[];
 };
 
-// Fix ALL-CAPS / all-lowercase roster names ("SMITH" -> "Smith") without
-// touching deliberate mixed case like "McDonald" or "deLaCruz".
+// Fix ALL-CAPS / all-lowercase roster names ("JANE SMITH" -> "Jane Smith")
+// while preserving deliberate casing: mixed-case words (McDonald), Roman
+// numeral suffixes (III, IV), lone initialisms in otherwise-normal names
+// (JD Kettle), and lowercase particles (van, de, della).
+const ROMAN_SUFFIX = /^(II|III|IV|V|VI|VII|VIII|IX|X)$/;
+const PARTICLES = new Set([
+  "van", "von", "de", "del", "della", "der", "den", "da", "das", "dos",
+  "di", "du", "la", "le", "los", "las", "y", "ter", "ten", "bin", "ibn", "al", "el",
+]);
+
 export function normalizeName(name: string): string {
-  return name
-    .replace(/\s+/g, " ")
-    .trim()
-    .split(" ")
-    .map((word) => {
+  const words = name.replace(/\s+/g, " ").trim().split(" ");
+  const alphaWords = words.filter((w) => /[a-z]/i.test(w));
+  const wholeNameAllCaps =
+    alphaWords.length > 0 && alphaWords.every((w) => !/[a-z]/.test(w));
+
+  return words
+    .map((word, i) => {
       const hasUpper = /[A-Z]/.test(word);
       const hasLower = /[a-z]/.test(word);
-      if (hasUpper && hasLower) return word; // already mixed case — leave it
+      if (hasUpper && hasLower) return word; // deliberate mixed case
+      if (hasUpper) {
+        if (ROMAN_SUFFIX.test(word.replace(/\./g, ""))) return word;
+        // An all-caps word in an otherwise-normal name is an initialism.
+        if (!wholeNameAllCaps) return word;
+      } else if (hasLower) {
+        if (i > 0 && PARTICLES.has(word)) return word; // keep "van", "de", ...
+        if (i > 0 && ROMAN_SUFFIX.test(word.toUpperCase().replace(/\./g, ""))) {
+          return word.toUpperCase(); // "iii" -> "III"
+        }
+      }
       return word
         .toLowerCase()
         .replace(/(^|[-'’.])([a-z])/g, (_, sep, ch) => sep + ch.toUpperCase());
