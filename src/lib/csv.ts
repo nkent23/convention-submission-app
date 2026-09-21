@@ -41,6 +41,24 @@ export type ParsedRoster = {
   errors: { line: number; message: string }[];
 };
 
+// Fix ALL-CAPS / all-lowercase roster names ("SMITH" -> "Smith") without
+// touching deliberate mixed case like "McDonald" or "deLaCruz".
+export function normalizeName(name: string): string {
+  return name
+    .replace(/\s+/g, " ")
+    .trim()
+    .split(" ")
+    .map((word) => {
+      const hasUpper = /[A-Z]/.test(word);
+      const hasLower = /[a-z]/.test(word);
+      if (hasUpper && hasLower) return word; // already mixed case — leave it
+      return word
+        .toLowerCase()
+        .replace(/(^|[-'’.])([a-z])/g, (_, sep, ch) => sep + ch.toUpperCase());
+    })
+    .join(" ");
+}
+
 export function parseRosterCsv(
   csv: string,
   defaultSubmissionUrl = "",
@@ -81,9 +99,11 @@ export function parseRosterCsv(
   lines.slice(1).forEach((raw, i) => {
     const line = i + 2; // 1-based, after header
     const values = parseCsvLine(raw);
-    const memberName = hasFullName
-      ? (values[col("member_name")] ?? "")
-      : `${values[col("first_name")] ?? ""} ${values[col("last_name")] ?? ""}`.trim();
+    const memberName = normalizeName(
+      hasFullName
+        ? (values[col("member_name")] ?? "")
+        : `${values[col("first_name")] ?? ""} ${values[col("last_name")] ?? ""}`.trim(),
+    );
     const row: RosterRow = {
       line,
       organization: values[col("organization")] ?? "",
