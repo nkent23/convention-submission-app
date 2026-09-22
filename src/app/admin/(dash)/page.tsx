@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { db } from "@/db/client";
 import { members, organizations, schools, verifications } from "@/db/schema";
 import { count, desc, eq, gte, sql } from "drizzle-orm";
@@ -47,7 +48,12 @@ export default async function AdminDashboard() {
         ))}
       </div>
 
-      <h2 className="mb-3 text-xl font-semibold text-gray-900">Recent verifications</h2>
+      <div className="mb-3 flex items-baseline justify-between">
+        <h2 className="text-xl font-semibold text-gray-900">Recent verifications</h2>
+        <Link href="/admin/verifications" className="text-sm text-ehs-700 hover:underline">
+          View all →
+        </Link>
+      </div>
       {recent.length === 0 ? (
         <p className="text-gray-500">No verifications yet.</p>
       ) : (
