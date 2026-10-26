@@ -43,6 +43,17 @@ export default async function Home() {
               </div>
             )}
           </div>
+
+          <p className="mt-6 text-center text-sm text-gray-600">
+            Having trouble or have a question? Contact the English Convention team at{" "}
+            <a
+              href="mailto:englishconvention@niu.edu"
+              className="font-medium text-ehs-700 underline hover:text-ehs-800"
+            >
+              englishconvention@niu.edu
+            </a>
+            .
+          </p>
         </div>
       </div>
     </div>
