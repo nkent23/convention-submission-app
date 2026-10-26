@@ -49,6 +49,18 @@ export default async function SchoolPage({
             </div>
             <NameSearch schoolId={sid} />
           </div>
+
+          <p className="mt-6 text-center text-sm text-gray-600">
+            If your name is not listed under your school, please contact the English Convention
+            team at{" "}
+            <a
+              href="mailto:englishconvention@niu.edu"
+              className="font-medium text-ehs-700 underline hover:text-ehs-800"
+            >
+              englishconvention@niu.edu
+            </a>
+            .
+          </p>
         </div>
       </div>
     </div>
