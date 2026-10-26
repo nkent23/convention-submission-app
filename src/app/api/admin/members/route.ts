@@ -17,10 +17,12 @@ export async function GET(request: NextRequest) {
   const q = (sp.get("q") ?? "").trim();
   const schoolId = Number(sp.get("schoolId"));
   const orgId = Number(sp.get("orgId"));
+  const school = (sp.get("school") ?? "").trim();
   const status = sp.get("status");
 
   const conditions: SQL[] = [];
   if (q) conditions.push(ilike(members.name, `%${q.replace(/[%_\\]/g, "\\$&")}%`));
+  if (school) conditions.push(ilike(schools.name, `%${school.replace(/[%_\\]/g, "\\$&")}%`));
   if (Number.isInteger(schoolId) && schoolId > 0) conditions.push(eq(members.schoolId, schoolId));
   if (Number.isInteger(orgId) && orgId > 0) conditions.push(eq(members.organizationId, orgId));
   if (status === "active" || status === "archived") {
@@ -47,7 +49,11 @@ export async function GET(request: NextRequest) {
       .orderBy(asc(members.name))
       .limit(PAGE_SIZE)
       .offset((page - 1) * PAGE_SIZE),
-    db.select({ total: count() }).from(members).where(where),
+    db
+      .select({ total: count() })
+      .from(members)
+      .innerJoin(schools, eq(members.schoolId, schools.id))
+      .where(where),
   ]);
 
   return NextResponse.json({ rows, total, page, pageSize: PAGE_SIZE });

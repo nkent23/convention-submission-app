@@ -32,6 +32,7 @@ export default function MembersPage() {
   const [pageSize, setPageSize] = useState(50);
   const [q, setQ] = useState("");
   const [orgId, setOrgId] = useState(0);
+  const [school, setSchool] = useState("");
   const [status, setStatus] = useState("");
   const [orgs, setOrgs] = useState<Org[]>([]);
   const [schools, setSchools] = useState<School[]>([]);
@@ -40,11 +41,12 @@ export default function MembersPage() {
   const [error, setError] = useState("");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const load = useCallback(async (opts: { page: number; q: string; orgId: number; status: string }) => {
+  const load = useCallback(async (opts: { page: number; q: string; orgId: number; school: string; status: string }) => {
     setLoading(true);
     const params = new URLSearchParams({ page: String(opts.page) });
     if (opts.q) params.set("q", opts.q);
     if (opts.orgId) params.set("orgId", String(opts.orgId));
+    if (opts.school) params.set("school", opts.school);
     if (opts.status) params.set("status", opts.status);
     const res = await fetch(`/api/admin/members?${params}`);
     const data = await res.json();
@@ -61,11 +63,11 @@ export default function MembersPage() {
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => load({ page, q, orgId, status }), q ? 300 : 0);
+    debounceRef.current = setTimeout(() => load({ page, q, orgId, school, status }), q || school ? 300 : 0);
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [page, q, orgId, status, load]);
+  }, [page, q, orgId, school, status, load]);
 
   const save = async () => {
     if (!editing) return;
@@ -87,19 +89,20 @@ export default function MembersPage() {
       return;
     }
     setEditing(null);
-    load({ page, q, orgId, status });
+    load({ page, q, orgId, school, status });
   };
 
   const remove = async (row: Row) => {
     if (!confirm(`Delete ${row.name}? This also removes their verification history.`)) return;
     await fetch(`/api/admin/members/${row.id}`, { method: "DELETE" });
-    load({ page, q, orgId, status });
+    load({ page, q, orgId, school, status });
   };
 
   const exportUrl = () => {
     const params = new URLSearchParams();
     if (q) params.set("q", q);
     if (orgId) params.set("orgId", String(orgId));
+    if (school) params.set("school", school);
     if (status) params.set("status", status);
     return `/api/admin/members/export?${params}`;
   };
@@ -152,6 +155,24 @@ export default function MembersPage() {
             </option>
           ))}
         </select>
+        <input
+          type="text"
+          list="school-options"
+          placeholder="Filter by school..."
+          value={school}
+          onChange={(e) => {
+            setSchool(e.target.value);
+            setPage(1);
+          }}
+          className="w-72 rounded-lg border border-gray-300 p-2 text-sm"
+        />
+        <datalist id="school-options">
+          {schools
+            .filter((s) => !orgId || s.organizationId === orgId)
+            .map((s) => (
+              <option key={s.id} value={s.name} />
+            ))}
+        </datalist>
         <select
           value={status}
           onChange={(e) => {
