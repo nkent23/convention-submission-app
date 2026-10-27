@@ -9,6 +9,7 @@ type Row = {
   memberName: string;
   schoolName: string;
   orgName: string;
+  timesVerified?: number;
 };
 
 export default function VerificationsPage() {
@@ -18,6 +19,7 @@ export default function VerificationsPage() {
   const [pageSize, setPageSize] = useState(50);
   const [q, setQ] = useState("");
   const [orgId, setOrgId] = useState(0);
+  const [unique, setUnique] = useState(false);
   const [orgs, setOrgs] = useState<Org[]>([]);
   const [loading, setLoading] = useState(true);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -33,6 +35,7 @@ export default function VerificationsPage() {
       const params = new URLSearchParams({ page: String(page) });
       if (q) params.set("q", q);
       if (orgId) params.set("orgId", String(orgId));
+      if (unique) params.set("unique", "1");
       const res = await fetch(`/api/admin/verifications?${params}`);
       const data = await res.json();
       setRows(data.rows ?? []);
@@ -43,12 +46,13 @@ export default function VerificationsPage() {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [page, q, orgId]);
+  }, [page, q, orgId, unique]);
 
   const exportUrl = () => {
     const params = new URLSearchParams();
     if (q) params.set("q", q);
     if (orgId) params.set("orgId", String(orgId));
+    if (unique) params.set("unique", "1");
     return `/api/admin/verifications/export?${params}`;
   };
 
@@ -92,8 +96,22 @@ export default function VerificationsPage() {
             </option>
           ))}
         </select>
+        <label className="flex cursor-pointer items-center gap-2 self-center text-sm text-gray-700">
+          <input
+            type="checkbox"
+            checked={unique}
+            onChange={(e) => {
+              setUnique(e.target.checked);
+              setPage(1);
+            }}
+            className="h-4 w-4 accent-ehs-700"
+          />
+          Unique members only
+        </label>
         <span className="self-center text-sm text-gray-500">
-          {total.toLocaleString()} verification{total === 1 ? "" : "s"}
+          {unique
+            ? `${total.toLocaleString()} member${total === 1 ? "" : "s"} verified`
+            : `${total.toLocaleString()} verification${total === 1 ? "" : "s"}`}
         </span>
       </div>
 
@@ -104,10 +122,11 @@ export default function VerificationsPage() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-left text-gray-600">
               <tr>
-                <th className="px-4 py-2">When (Central)</th>
+                <th className="px-4 py-2">{unique ? "Last verified (Central)" : "When (Central)"}</th>
                 <th className="px-4 py-2">Member</th>
                 <th className="px-4 py-2">School</th>
                 <th className="px-4 py-2">Organization</th>
+                {unique && <th className="px-4 py-2 text-right">Times</th>}
               </tr>
             </thead>
             <tbody>
@@ -121,11 +140,14 @@ export default function VerificationsPage() {
                   <td className="px-4 py-2 font-medium text-gray-900">{row.memberName}</td>
                   <td className="px-4 py-2 text-gray-600">{row.schoolName}</td>
                   <td className="px-4 py-2 text-gray-600">{row.orgName}</td>
+                  {unique && (
+                    <td className="px-4 py-2 text-right text-gray-600">{row.timesVerified}</td>
+                  )}
                 </tr>
               ))}
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan={unique ? 5 : 4} className="px-4 py-8 text-center text-gray-500">
                     No verifications found.
                   </td>
                 </tr>
